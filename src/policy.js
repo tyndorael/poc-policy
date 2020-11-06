@@ -32,48 +32,44 @@ module.exports.calculateCost = ({ age, childs }, hasDentalCare, companyPercentag
 
   if (age > 65) {
     return {
-      cost: 0,
+      company: 0,
       copay: cost,
     }
   }
 
   return {
-    cost: cost * (companyPercentage / 100),
+    company: cost * (companyPercentage / 100),
     copay: cost * ((100 - companyPercentage) / 100)
   };
 }
 
 module.exports.getPolicy = async event => {
-  const { data } = await axios.get('https://dn8mlk7hdujby.cloudfront.net/interview/insurance/policy');
-  const { success, policy: { workers, has_dental_care: hasDentalCare, company_percentage: companyPercentage } } = data;
+  try {
+    const { data } = await axios.get('https://dn8mlk7hdujby.cloudfront.net/interview/insurance/policy');
+    const { success, policy: { workers, has_dental_care: hasDentalCare, company_percentage: companyPercentage } } = data;
 
-  if (!success) {
+    if (!success) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: 'Something went wrong.',
+        })
+      };
+    }
+
+    const results = workers.map(worker => this.calculateCost(worker, hasDentalCare, companyPercentage));
+
     return {
-      statusCode: 400,
+      statusCode: 200,
+      body: JSON.stringify(results),
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
       body: JSON.stringify({
         message: 'Something went wrong.',
-        data
-      })
+      }),
     };
   }
-
-  const results = workers.map(worker => {
-    return {
-      worker,
-      cost: this.calculateCost(worker, hasDentalCare, companyPercentage)
-    }
-  })
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      hasDentalCare,
-      companyPercentage,
-      results
-    }),
-  };
-
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
 };
 
