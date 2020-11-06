@@ -1,0 +1,17 @@
+service: policy
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+functions:
+  policy:
+    handler: src/policy.getPolicy
+    events:
+      - http:
+          path: policy
+          method: get
+
+plugins:
+  - serverless-offline
